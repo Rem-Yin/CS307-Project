@@ -1,0 +1,19 @@
+These files support the POSIX implementation of the thread pool project.
+
+Source files:
+
+- main.c (main program to simulate producer-consumer problem)
+
+- buffer.c (implementation of buffer)
+
+- buffer.h (header file containing function prototypes)
+
+Makefile
+
+To run the make file, enter "make"
+
+To run the example program, enter "./example argv[1] argv[2], argv[3]"
+argvs are all intergers!!!
+argv[1] -----> sleep time of main program
+argv[2] -----> number of producer
+argv[3] -----> number of consumer
