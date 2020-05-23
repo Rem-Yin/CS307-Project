@@ -33,7 +33,13 @@ int main(void)
     	work[i].a = rand()%520;
     	work[i].b = rand()%520;
     }
-
+	
+	for(int i=0; i< DATA_SIZE; ++i)
+	{
+		printf("work[%d].a = %d, work[%d].b = %d, the right anwser is %d.\n",
+ 					i, 		work[i].a, i, 		work[i].b, 		work[i].a+work[i].b);
+	}
+	
     // initialize the thread pool
     pool_init();
 
@@ -46,8 +52,8 @@ int main(void)
     		i--;
     }
 
-	// may be helpful 
-	//sleep(3);
+	// may be helpful
+	sleep(1);
 	
     pool_shutdown();
 
