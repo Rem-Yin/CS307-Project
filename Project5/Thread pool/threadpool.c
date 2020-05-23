@@ -26,16 +26,10 @@ typedef struct
     void *data;
 }task;
 
-// the work queue
-struct node{
-	task work;
-	struct node *next;
-};
-
-//define a queue
-struct node *head;
-struct node *tail;
+// the work array
+task work_array[QUEUE_SIZE];
 int size;
+int Index;
 
 // the worker bee
 pthread_t bee[NUMBER_OF_THREADS];
@@ -44,14 +38,11 @@ pthread_t bee[NUMBER_OF_THREADS];
 // returns 0 if successful or 1 otherwise, 
 int enqueue(task t) 
 {
-	//if size of queue now is equal to 10 
+	//if queue is full  
 	if(size == QUEUE_SIZE)
 		return 1;
 		
-	tail->next = (struct node *)malloc(sizeof(struct node));
-	
-	tail->next->work = t;	
-	tail = tail->next;
+	work_array[(Index+size)%QUEUE_SIZE] = t;
 	size++;
 	
     return 0;
@@ -60,19 +51,17 @@ int enqueue(task t)
 // remove a task from the queue
 task dequeue() 
 {
-	if(head->next == NULL){
+	if(size == 0){
 		fprintf(stderr, "No work in Queue!\n");
-		exit(0);
+		exit(1);
 	}
 	
-	struct node *tmp = head;
-	head = head->next;
+	task tmp = work_array[Index];
 	
-	free(tmp);
-	
+	Index = (Index+1)%QUEUE_SIZE;
 	size--;
 	
-    return head->work;
+    return tmp;
 }
 
 // the worker thread in the thread pool
@@ -82,13 +71,10 @@ void *worker(void *param)
    	
    	//every thread will go into here once it's created
 	while(TRUE){
+		pthread_testcancel();
+		
 		//if no work, the thread wait
 		sem_wait(&Wait_num);
-		
-		//flag==1 means pool is shutdown
-		//three threads quit
-		if(flag)
-			break;
 		
 		//only one task can operate on queue
 		pthread_mutex_lock(&mutex);
@@ -140,14 +126,13 @@ int pool_submit(void (*somefunction)(void *p), void *p)
 // initialize the thread pool
 void pool_init(void)
 {
-	head =(struct node *)malloc(sizeof(struct node *));
-	head->next = NULL;	
-	tail = head;
+	//initialize array;
+	size = 0;
+	Index = 0;
 	
-	//initialize the mutex, semaphore, the size of queue
+	//initialize the mutex, semaphore
 	pthread_mutex_init(&mutex , NULL);
 	sem_init(&Wait_num, 0, 0);
-	size = 0;
 	
 	// create the threads
 	for (int i=0; i<NUMBER_OF_THREADS; i++)
@@ -161,14 +146,16 @@ void pool_shutdown(void)
 	pthread_mutex_destroy(&mutex);
 	sem_destroy(&Wait_num);
 	
-	//set shutdown flag
-	flag = 1;
-	
 	//three threads may be trapped in wait
 	//which means it can not check the flag
 	//so we must signal three times
-	for(int i=0; i<NUMBER_OF_THREADS; i++)
+	for(int i=0; i<NUMBER_OF_THREADS; i++){
+		pthread_cancel(bee[i]);
+	}
+	
+	for(int i=0; i<NUMBER_OF_THREADS; i++){
 		sem_post(&Wait_num);
+	}
 	
 	for (int i=0; i<NUMBER_OF_THREADS; i++)
    	 	pthread_join(bee[i], NULL);
