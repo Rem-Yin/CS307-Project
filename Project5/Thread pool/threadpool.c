@@ -142,10 +142,6 @@ void pool_init(void)
 // shutdown the thread pool
 void pool_shutdown(void)
 {
-	//delete mutex and semaphore
-	pthread_mutex_destroy(&mutex);
-	sem_destroy(&Wait_num);
-	
 	//three threads may be trapped in wait
 	//which means it can not check the flag
 	//so we must signal three times
@@ -156,6 +152,11 @@ void pool_shutdown(void)
 	for(int i=0; i<NUMBER_OF_THREADS; i++){
 		sem_post(&Wait_num);
 	}
+	
+	//delete mutex and semaphore
+	pthread_mutex_destroy(&mutex);
+	sem_destroy(&Wait_num);
+	
 	
 	for (int i=0; i<NUMBER_OF_THREADS; i++)
    	 	pthread_join(bee[i], NULL);
