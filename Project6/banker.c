@@ -250,8 +250,6 @@ int request_resources(int customer_num, int request[]){
 		need[customer_num][i] -= request[i];
 	}
 	
-	print_all_matrix();
-	
 	//safe return 0
 	if(isSafe() == 1)
 		return 0;
