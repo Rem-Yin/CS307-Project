@@ -1,0 +1,7 @@
+This is a README file.
+
+use make to compile the program.
+
+use ./banker [1][2][3][4] to start the program
+
+[1,4] is available number of each resource
