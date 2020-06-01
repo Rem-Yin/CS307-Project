@@ -1,0 +1,16 @@
+
+# makefile for banker algorithm
+#
+
+CC=gcc
+CFLAGS=-Wall
+
+Contiguous_MemAlloc: Contiguous_MemAlloc.o
+	$(CC) $(CFLAGS) -o Contiguous_MemAlloc Contiguous_MemAlloc.o
+
+Contiguous_MemAlloc.o: Contiguous_MemAlloc.c
+	$(CC) $(CFLAGS) -c Contiguous_MemAlloc.c
+
+clean: 
+	rm -rf *.o
+	rm -rf Contiguous_MemAlloc
