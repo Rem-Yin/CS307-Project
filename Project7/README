@@ -1,0 +1,22 @@
+To run the program, enter "./tab [1]" in terminal.
+[1] is an integer which indicates the size of whole memory.
+
+all supporting commond is as follows:
+
+request memory:
+RQ [name] [quantum] [Policy]
+[name]: the process name
+[quantum]: requesting size of memory
+[Policy]: allocation policy; B for best-fit, W for worst-fit, F for first-fit.
+
+release memory:
+RL [name]
+
+show memory status:
+STAT
+
+compact unused memory:
+C
+
+exit:
+X
