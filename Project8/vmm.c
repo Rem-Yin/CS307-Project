@@ -23,7 +23,6 @@ int frame_accessed_order[PageFrame_Num];
 int frame_cur_size;
 
 void init_frame();
-int get_frame();
 int frame_insert(int page_num);
 char frame_access(int frame_num, int offset);
 //---------------------------------------------------------
@@ -59,7 +58,7 @@ FILE *backing_store;
 
 int main(int argc, char *argv[]){	
 	FILE *logical=fopen(argv[1], "r");
-	FILE *phsical=fopen("transefer_result.txt", "w");
+	FILE *phsical=fopen("translate_result.txt", "w");
 	backing_store=fopen("BACKING_STORE.bin", "rb");
 
 	//initialize page table, TLB, page frame
@@ -74,17 +73,18 @@ int main(int argc, char *argv[]){
 	int value;
 
 	while(fscanf(logical, "%d", &address) == 1){
-		address=address & 0x0000ffff;
-		offset=address & 0x000000ff;
-		page_num=(address & 0x0000ff00) >> 8;
-		frame_num=get_frame_num(page_num);
-		value=(int)frame_access(frame_num, offset);
+		address = address & 0x0000ffff;
+		offset = address & 0x000000ff;
+		page_num = (address & 0x0000ff00) >> 8;
+		frame_num = get_frame_num(page_num);
+		value = (int)frame_access(frame_num, offset);
 		fprintf(phsical, "Virtual address: %d Physical address: %d Value: %d\n", 
 						address, (frame_num<<8)+offset, value);
 	}
 	
-	printf("TLB hit rate is: %.3f\n", 1.0 * TLB_hit / 1000);
-	printf("Page fault rate is: %.3f\n", 1.0 * page_fault / 1000);
+	printf("translate finised!\n Please check the anwser at \"translate_result.txt\" file.\n");
+	printf("TLB hit rate is: %.3f\n", (1.0 * TLB_hit) / 1000);
+	printf("Page fault rate is: %.3f\n", (1.0 * page_fault) / 1000);
 	
 	fclose(logical);
 	fclose(phsical);
@@ -92,45 +92,9 @@ int main(int argc, char *argv[]){
 	return 0;
 }
 
-// Get an empty frame from the empty frame list.
-// If success, return frame_num; otherwise, return -1.
-int get_frame(){
-	if(frame_head == NULL)
-		return -1;
-
-	int res;
-	if(frame_cur_size == 1){
-		res=frame_head->frame_num;
-		free(frame_head);
-		frame_head=NULL;
-		return res;
-	}
-	else{
-		struct frame_node *tmp;	
-		res=frame_head->frame_num;
-		tmp=frame_head;
-		frame_head=frame_head->next;
-		free(tmp);
-		return res;
-	}
-}
-
-// Initialize the empty frame list.
+//initialize the frame and phsical memory
 void init_frame(){
-	struct frame_node *temp=frame_head;
-	//initialize the head and tail;
-	temp=(struct frame_node *) malloc (sizeof(struct frame_node));
-	temp->frame_num = 0;
-	frame_head=temp;
-		
-	for(int i=1; i<PageFrame_Num; i++){
-		temp->next=(struct frame_node*)malloc(sizeof(struct frame_node));
-		temp->next->frame_num=i;
-		temp->next->next=NULL;
-		temp=temp->next;
-	}
-	
-	frame_cur_size=PageFrame_Num;
+	frame_cur_size = 0;
 	
 	for(int i=0; i<PageFrame_Num; i++)
 		frame_accessed_order[i] = 0;
@@ -142,9 +106,11 @@ int frame_insert(int page_num){
 	fseek(backing_store, page_num*PageFrame_Size, SEEK_SET);
   	fread(buffer, sizeof(char), PageFrame_Size, backing_store);
 
-	int frame_num=get_frame();
+	int frame_num = frame_cur_size;
+	frame_cur_size++;
 	//frame is full; replace a frame with LRU
-	if(frame_num == -1){
+	if(frame_num == PageFrame_Num){
+		frame_cur_size--;
 		for(int i=0; i<PageFrame_Num; i++){
 			//replace the frame with maximal access order
 			if(frame_accessed_order[i] == PageFrame_Num){
@@ -188,7 +154,7 @@ void init_TLB(){
 	}
 }
 
-//access TLB to find page_Num's corresponding frame_num
+//access TLB trying to find corresponding frame_num
 int TLB_access(int page_num){
 	int pos=-1;
 	for(int i=0; i<TLB_Size; i++){
@@ -290,12 +256,11 @@ int get_frame_num(int page_num){
 	int res=TLB_access(page_num);
 	if(res != -1)
 		return res;
-
 	//TLB miss but table hit
-	if(table_isValid[page_num] == 1){
+	else if(table_isValid[page_num] == 1){
 		//update TLB
 		TLB_insert(page_num, page_table[page_num]);
-		return page_table[page_num];
+		res = page_table[page_num];
 	}
 	//TLB miss, table miss
 	else{
@@ -305,6 +270,7 @@ int get_frame_num(int page_num){
 		page_table[page_num] = frame_insert(page_num);
 		TLB_insert(page_num, page_table[page_num]);
 		
-		return page_table[page_num];
+		res = page_table[page_num];
 	}
+	return res;
 }
